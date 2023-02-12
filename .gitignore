@@ -4,4 +4,7 @@
 *.ptx
 *.cubin
 *.fatbin
-./main
+
+/main
+.vscode/
+main
