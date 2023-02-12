@@ -1,2 +1,7 @@
-main
-*.o
+*.i
+*.ii
+*.gpu
+*.ptx
+*.cubin
+*.fatbin
+./main

@@ -4,7 +4,7 @@ OUT=main
 all: $(OUT)
 
 $(OUT): $(IN)
-	nvcc -o $(OUT) -lcuda -lcurand -lGL -lGLU -lglut -arch=sm_35 -rdc=true $(IN) -Wno-deprecated-gpu-targets -Wno-deprecated-declarations
+	nvcc -o $(OUT) -lcuda -lcurand -lGL -lGLU -lglut -arch=sm_35 -rdc=true $(IN) -Wno-deprecated-gpu-targets -Wno-deprecated-declarations -Xcompiler -Wall
 
 run: all
 	./main
