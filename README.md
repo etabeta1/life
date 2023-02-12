@@ -20,4 +20,4 @@ If you want to print the time took by your GPU to compute every single frame, ju
 The simulation parameters are hardcoded, you can find and modify them in the ```getInteractionConstant``` function.
 The parameters present right now are from a random simulation.
 
-
+You can change also the number of particles, the size of the windows and more by changing the ```#define``` lines at the top of the ```main.cu``` file.

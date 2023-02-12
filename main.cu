@@ -1,8 +1,9 @@
-//#define PRINT_TIME // Uncomment this line to print the time of each step
+//#define PRINT_TIME // Uncomment this line to print the time taken by the initialization and the update of the particles
 
 #include <stdio.h>
 
 #define GL_GLEXT_PROTOTYPES
+
 #include <cuda.h>
 #include <cuda_gl_interop.h>
 #include <curand.h>
@@ -27,8 +28,8 @@ GLuint buffer;                  // OpenGL buffer
 cudaGraphicsResource *resource; // CUDA resource
 uchar4 *d_screen;               // Pointer to the screen buffer in the GPU
 
-Particle *d_particles;
-Particle *d_group_1, *d_group_2, *d_group_3, *d_group_4;
+Particle *d_particles;                                      // Pointer to the array of particles in the GPU
+Particle *d_group_1, *d_group_2, *d_group_3, *d_group_4;    // Pointers to the groups of particles in the GPU (used to initialize them with different colors)
 
 #ifdef PRINT_TIME
 cudaEvent_t initialize_start, initialize_stop;
@@ -36,8 +37,9 @@ cudaEvent_t update_start, update_stop;
 cudaEvent_t draw_start, draw_stop;
 #endif
 
-// CUDA kernels
+// CUDA kernels and functions
 __global__ void initializeParticles(Particle* particles, ParticleKind kind, int n);
+__device__ float getInteractionConstant(ParticleKind kind1, ParticleKind kind2);
 __global__ void update_particles_speed(Particle* particles, int n);
 __global__ void update_particles_position(Particle* particles, int n);
 __global__ void draw_particles(Particle* particles, int n, uchar4* screen);
@@ -133,6 +135,7 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+// Initialize all the particles in a random posizion, with 0 speed and a given color
 __global__ void initializeParticles(Particle* particles, ParticleKind kind, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -149,7 +152,9 @@ __global__ void initializeParticles(Particle* particles, ParticleKind kind, int 
     }
 }
 
+// Returns the force two particles exert on each other
 __device__ float getInteractionConstant(ParticleKind kind1, ParticleKind kind2) {
+    // matrix[i][j] is the force that a particle of kind j exerts on a particle of kind i, change these values to change the interaction between particles
     float matrix[4][4] = {
         { 0.926139214076102, -0.834165324456992,  0.280928927473724, -0.064273079857230},
         {-0.461709646508098,  0.491424346342683,  0.276072602719069,  0.641348738688976},
@@ -159,6 +164,7 @@ __device__ float getInteractionConstant(ParticleKind kind1, ParticleKind kind2) 
     return matrix[kind1][kind2];
 }
 
+// Kernel that updates the speed of all the particles
 __global__ void update_particles_speed(Particle* particles, int n) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -179,6 +185,7 @@ __global__ void update_particles_speed(Particle* particles, int n) {
     }
 }
 
+// Kernel that updates the position of all the particles according to their speed
 __global__ void update_particles_position(Particle* particles, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -188,6 +195,7 @@ __global__ void update_particles_position(Particle* particles, int n) {
         particles[i].x += particles[i].vx;
         particles[i].y += particles[i].vy;
 
+        // If the particle is outside the screen, put it back inside
         if(particles[i].x < 0) {
             particles[i].x = 0;
         }
@@ -203,6 +211,7 @@ __global__ void update_particles_position(Particle* particles, int n) {
     }
 }
 
+// Kernel that draw a pixel for each particle in the buffer so that they can be displayed
 __global__ void draw_particles(Particle* particles, int n, uchar4* screen) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -210,6 +219,7 @@ __global__ void draw_particles(Particle* particles, int n, uchar4* screen) {
         int x = particles[i].x;
         int y = particles[i].y;
 
+        // Check that the particle is on screen (it should always be) so that we don't write outside the buffer
         if(x >= 0 && x < WINDOW_SIZE && y >= 0 && y < WINDOW_SIZE) {
             int position = y * WINDOW_SIZE + x;
 
@@ -337,6 +347,7 @@ void chooseDevice(int major, int minor) {
 }
 
 #ifdef PRINT_TIME
+// Function that prints how many milliseconds have passed between two events
 void printTimeBetweenEvents(cudaEvent_t start, cudaEvent_t stop, const char* message) {
     float time;
 
