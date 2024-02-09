@@ -10,8 +10,8 @@ This projet requires having a CUDA capable GPU with at least Compute Capability 
 
 ## Compilation and Execution
 
-    git clone https://github.com/etabeta1/ArtificialParticleLife_CUDA.git
-    cd ArtificialParticleLife_CUDA
+    git clone https://github.com/etabeta1/life.git
+    cd life
     make
     make run
 
